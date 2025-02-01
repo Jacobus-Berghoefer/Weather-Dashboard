@@ -9,12 +9,20 @@ interface Coordinates {
 
 // TODO: Define a class for the Weather object
 class Weather {
+  city: string;
+  date: string;
+  icon: string;
+  iconDescription: string;
   temperature: number;
   condition: string;
   humidity: number;
   windSpeed: number;
 
-  constructor(temperature: number, condition: string, humidity: number, windSpeed: number) {
+  constructor(city: string, date: string, icon: string, iconDescription: string, temperature: number, condition: string, humidity: number, windSpeed: number) {
+    this.city = city;
+    this.date = date;
+    this.icon = icon;
+    this.iconDescription = iconDescription;
     this.temperature = temperature;
     this.condition = condition;
     this.humidity = humidity;
@@ -64,12 +72,12 @@ class WeatherService {
   // TODO: Create buildWeatherQuery method
   // Constructs the query URL for fetching weather data using latitude and longitude
   private buildWeatherQuery(coordinates: Coordinates): string {
-    return `${this.baseURL}/weather?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.apiKey}&units=metric`;
+    return `${this.baseURL}/data/2.5/weather?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.apiKey}&units=imperial`;
   }
 
   // Builds the query URL to fetch 5-day forecast data
   private buildForecastQuery(coordinates: Coordinates): string {
-    return `${this.baseURL}/forecast?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.apiKey}&units=metric`;
+    return `${this.baseURL}/data/2.5/forecast?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.apiKey}&units=imperial`;
   }
   
   // TODO: Create fetchAndDestructureLocationData method
@@ -83,6 +91,8 @@ class WeatherService {
   // Fetches the weather data for a given set of coordinates
   private async fetchWeatherData(coordinates: Coordinates): Promise<any> {
     const response = await fetch(this.buildWeatherQuery(coordinates));
+    console.log(response);
+    console.log(this.buildWeatherQuery(coordinates));
     if (!response.ok) throw new Error("Failed to fetch weather data.");
     return await response.json();
   }
@@ -97,23 +107,35 @@ class WeatherService {
   // TODO: Build parseCurrentWeather method
   // Parses the API response and creates a Weather object
   private parseCurrentWeather(response: any): Weather {
+    console.log(response);
+    const timestamp = response.dt;
+    const date = new Date (timestamp * 1000).toDateString();
+    const icon = response.weather[0].icon;
+    const iconDescription = response.weather[0].iconDescription;
     const { temp: temperature, humidity } = response.main;
     const { description: condition } = response.weather[0];
     const { speed: windSpeed } = response.wind;
-    return new Weather(temperature, condition, humidity, windSpeed);
+    return new Weather(this.city, date, icon, iconDescription, temperature, condition, humidity, windSpeed);
   }
 
   // TODO: Complete buildForecastArray method
   // A placeholder for building a forecast
   private buildForecastArray(currentWeather: Weather, weatherData: any[]): Weather[] {
     // Example: Extend the array with current and forecast data
-    const forecastArray = weatherData.map((forecast) => {
+    //const forecastArray = weatherData.map((forecast) => {
+    const forecastArray = []
+      for (let i = 7; i < weatherData.length; i+=8 ) {
+        const forecast = weatherData[i];
+      const timestamp = forecast.dt;
+      const date = new Date (timestamp * 1000).toDateString();
+      const icon = forecast.weather[0].icon;
+      const iconDescription = forecast.weather[0].iconDescription;
       const { temp: temperature, humidity } = forecast.main;
       const { description: condition } = forecast.weather[0];
       const { speed: windSpeed } = forecast.wind;
           // Create and return a new Weather object
-    return new Weather(temperature, condition, humidity, windSpeed);
-  });
+    forecastArray.push(new Weather(this.city, date, icon, iconDescription, temperature, condition, humidity, windSpeed));
+  };
 
     return [currentWeather, ...forecastArray]; // Add logic for forecast data
   }
